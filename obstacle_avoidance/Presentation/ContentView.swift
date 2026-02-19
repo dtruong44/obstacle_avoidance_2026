@@ -447,6 +447,26 @@ struct PreferencesView: View {
             hapticFeedback: Bool? = nil
         ) {
             Task {
+                if let height = userHeight {
+                    SettingsManager.shared.saveHeight(height)
+                }
+                
+                if let sharing = locationSharing {
+                    SettingsManager.shared.saveLocationSharing(sharing)
+                }
+                
+                if let unit = measurementType {
+                    SettingsManager.shared.saveMeasurementType(unit)
+                }
+                
+                if let haptic = hapticFeedback {
+                    SettingsManager.shared.saveHapticFeedback(haptic)
+                }
+
+                
+                print("Settings updated locally via SettingsManager.")
+
+                /*
                 guard let userId = user?.id else { return }
                 await Database.shared.updateUserPreferences(
                     userId: userId,
@@ -455,6 +475,7 @@ struct PreferencesView: View {
                     measurementType: measurementType,
                     hapticFeedback: hapticFeedback
                 )
+                */
             }
         }
 }
