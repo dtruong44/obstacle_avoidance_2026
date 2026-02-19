@@ -25,18 +25,18 @@ class UserDefaultsHandler {
     }
 
     func getMeasurementType(type: String) {
-        return defaults.object(forKey: "measurement_type")
+        return defaults.object(forKey: "measurement_type") as? String ?? "Feet"
     }
 
     func getUserHeight(height: Double) {
-        return defaults.object(forKey: "user_height")
+        return defaults.object(forKey: "user_height") as? Double ?? 60.0
     }
 
     func getHapticFeedback(enabled: Bool) {
-        return defaults.object(forKey: "haptic_feedback")
+        return defaults.object(forKey: "haptic_feedback") as? Bool ?? false
     }
 
     func getLocationSharing(enabled: Bool) {
-        return defaults.object(forKey: "location_sharing")
+        return defaults.object(forKey: "location_sharing") as? Bool ?? false
     }
 }
