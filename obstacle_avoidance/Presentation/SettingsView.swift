@@ -15,6 +15,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                /*
                 NavigationLink(destination: AccountScreen(user: $user)) {
                     Label("Account", systemImage: "arrow.right.circle")
                         .font(.headline)
@@ -24,6 +25,7 @@ struct SettingsView: View {
                         .padding(.bottom, 30)
                         .accessibility(addTraits: .isStaticText)
                 }
+                */
                 NavigationLink(destination: EmergencyContactView(user: user)) {
                     Label("Emergency Contacts", systemImage: "arrow.right.circle")
                         .font(.headline)
