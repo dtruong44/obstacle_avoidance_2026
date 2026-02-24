@@ -18,7 +18,7 @@ struct CameraView: View {
     var body: some View {
         ZStack{
             FrameView(image: model.frame, boundingBoxes: model.boundingBoxes)
-            CorridorOverlay(corridor: $model.corridorGeometry)
+            CorridorOverlay(corridor: $model.corridorGeometry, stress: model.stress)
         }
             .ignoresSafeArea()
             .onAppear {

@@ -36,6 +36,8 @@ class FrameHandler: NSObject, ObservableObject {
     public var corridorPosition: String = ""
     public var vert: String = ""
     public var objectIDD: Int = -1
+    public var maxDepth: Float = 12.0
+    @Published var stress: CGFloat = 0.0
 //    public var middlePoint: (Int, Int) = ()
     var screenRect: CGRect!
     override init() {
@@ -110,13 +112,6 @@ class FrameHandler: NSObject, ObservableObject {
                 height: objectBounds.maxY - objectBounds.minY
             )
             if let corridor = self.corridorGeometry{
-//                let inCorridor = CorridorUtils.isBoundingBoxInCorridor(transformedBounds, corridor: corridor)
-//                if !inCorridor{
-//                    print("object outside corridor")
-//                }
-//                else{
-//                    print("object inside corridor")
-//                }
                 let objectPos = CorridorUtils.determinePosition(transformedBounds, corridor: corridor)
                 let centerXPercentage = (transformedBounds.midX / screenRect.width) * 100
                 let centerYPercentage = (transformedBounds.midY / screenRect.height) * 100
@@ -362,12 +357,11 @@ extension FrameHandler: AVCaptureDataOutputSynchronizerDelegate {
         }
 
 
-        // Now store the value you actually want to use:
-//        let correctedDepth: Float16 = Float16(meanDistanceMetres)
-//        let averageDepth = count > 0 ? totalDepth / Float16(count) : 0
         let medianDepth = self.findMedian(distances: depthSamples)
         // This inverts the depth value as the distance is inversed naturally
         let correctedDepth: Float16 = medianDepth > 0 ? 1.0 / medianDepth : 0
+        // Use correctedDepth to then calculate the depth of the object relative to user
+        stress = self.updateDepth(correctedDepth)
         CVPixelBufferUnlockBaseAddress(depthMap, .readOnly)
         DispatchQueue.main.async {
             let newDetection = DetectionOutput(objcetName: self.objectName, distance: correctedDepth, corridorPosition: self.corridorPosition, id: self.objectIDD, vert: self.vert)
@@ -420,6 +414,15 @@ extension FrameHandler: AVCaptureDataOutputSynchronizerDelegate {
 //            }
         }
     }
+    
+    func updateDepth(_ z: Float16) -> CGFloat {
+        let d = Float(z)                 // convert once
+        let maxD = Float(maxDepth)       // ensure same type
+
+        let normalized = max(0, min(1, (1 - (d / maxD))))
+        return CGFloat(normalized)
+    }
+
     func findMedian(distances: [Float16]) -> Float16
     {
         let count = distances.count
@@ -479,6 +482,7 @@ struct CameraPreview: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIViewType, context: Context) {}
+    
 }
 struct BoundingBoxLayer: UIViewRepresentable {
     var layer: CALayer?

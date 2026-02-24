@@ -7,13 +7,14 @@
 
 import SwiftUI
 
+// Try to see if we can make this an enum to prevent instantiation
 struct CorridorGeometry {
     let left: CGRect
     let center: CGRect
     let right: CGRect
 }
 
-func calculateSlices(size:CGSize, stress: CGFloat) -> CorridorGeometry {
+func calculateCorridor(size:CGSize, stress: CGFloat) -> CorridorGeometry {
     let W = size.width
     let H = size.height
     
