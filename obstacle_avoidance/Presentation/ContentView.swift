@@ -379,8 +379,8 @@ struct PreferencesView: View {
     // All variables for user preferences
     let user: User?
     
-    @AppStorage private var hapticFeedback: Bool = false
-    @AppStorage private var locationSharing: Bool = false
+    @State private var hapticFeedback: Bool = false
+    @State private var locationSharing: Bool = false
     @AppStorage("measurementType") private var measurementType: String = "feet"
     @AppStorage("userHeight") private var userHeight: Int = 60
     // The range that the FOV and height can be between

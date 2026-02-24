@@ -13,4 +13,6 @@ struct ObstacleAvoidanceApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()  // Show main app if logged in
+        }
+    }
 }
