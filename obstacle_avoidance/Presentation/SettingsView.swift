@@ -44,6 +44,7 @@ struct SettingsView: View {
                         .padding(.bottom, 30)
                         .accessibility(addTraits: .isStaticText)
                 }
+                /*
                 Button(action: logout) {
                     Label("Logout", systemImage: "arrow.backward.circle")
                         .font(.headline)
@@ -53,6 +54,7 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .accessibility(label: Text("Logout"))
                 }
+                */
             }
         }
         .navigationTitle("Settings")
