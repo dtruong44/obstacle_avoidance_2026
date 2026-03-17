@@ -7,18 +7,18 @@
 
 import Foundation
 
-struct ThreatLevelConfigV3{
-    static let corridorPosition: [String: Int]=[
-        "Center": 10,  //Directly Ahead
-        "Left": 5,     // Left of the Corridor
-        "Right": 3,    // Right of the Corridor
-        "Outside": 0,    // Front of the Corridor
+struct ThreatLevelConfigV3 {
+    static let corridorPosition: [String: Int] = [
+        "Center": 10,
+        "Left": 5,
+        "Right": 3,
+        "Outside": 0
     ]
 
-//Setting up semi-arbitrary values just to run through the tree
-//15-12 consist of non-stationary obstacles. 10 represent stationary items of priority
-//7 we may encounter along a path, 6 is items we may find helpful, 5, items we can identify more as testing, 0 is items we should disregard.
-    static let objectWeights: [Int: Int]=[
+    // Setting up semi-arbitrary values just to run through the tree
+    // 15-12 consist of non-stationary obstacles. 10 represent stationary items of priority
+    // 7 we may encounter along a path, 6 is items we may find helpful, 5 items we can identify more as testing, 0 is items we should disregard.
+    static let objectWeights: [Int: Int] = [
         0: 15,  // Person
         1: 15,  // Bicycle
         2: 15,  // Car
@@ -79,7 +79,7 @@ struct ThreatLevelConfigV3{
         57: 7,  // Sofa
         58: 8,  // Potted Plant
         59: 7,  // Bed
-        60: 7,  // Dining table
+        60: 7,  // Dining Table
         61: 6,  // Toilet
         62: 6,  // TV Monitor
         63: 6,  // Laptop
@@ -98,7 +98,28 @@ struct ThreatLevelConfigV3{
         76: 5,  // Scissors
         77: 5,  // Teddy Bear
         78: 5,  // Hair Brush
-        79: 5   // Toothbrush
+        79: 5,  // Toothbrush
+
+        80: 15, // Stairs
+        81: 15, // Down Curb
+        82: 10, // Curb Ramp
+        83: 10, // Sidewalk Edge
+        84: 15, // Pothole
+        85: 10, // Construction Barrier
+        86: 7,  // Trash Can
+        87: 10, // Street Sign
+        88: 10, // Pole
+        89: 7,  // Mailbox
+        90: 6,  // Fence
+        91: 6,  // Hedge
+        92: 10, // Driveway
+        93: 7,  // Parked Car
+        94: 12, // Scooter
+        95: 6,  // Bicycle Rack
+        96: 10, // Tree Branch
+        97: 6,  // Lawn Chair
+        98: 6,  // Garden Hose
+        99: 10  // Uneven Pavement
     ]
 
     static let objectName: [String: Int] = [
@@ -182,5 +203,26 @@ struct ThreatLevelConfigV3{
         "teddy bear": 77,
         "hair drier": 78,
         "toothbrush": 79,
+
+        "stairs": 80,
+        "down_curb": 81,
+        "curb_ramp": 82,
+        "sidewalk_edge": 83,
+        "pothole": 84,
+        "construction_barrier": 85,
+        "trash_can": 86,
+        "street_sign": 87,
+        "pole": 88,
+        "mailbox": 89,
+        "fence": 90,
+        "hedge": 91,
+        "driveway": 92,
+        "parked_car": 93,
+        "scooter": 94,
+        "bicycle_rack": 95,
+        "tree_branch": 96,
+        "lawn_chair": 97,
+        "garden_hose": 98,
+        "uneven_pavement": 99
     ]
 }
