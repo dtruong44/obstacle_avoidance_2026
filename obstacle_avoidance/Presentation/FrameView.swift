@@ -73,14 +73,6 @@ struct FrameView: View {
 
     var body: some View {
         ZStack {
-            if let image = image {
-                Image(uiImage: UIImage(cgImage: image))
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                Color.black
-            }
-
             // Overlay bounding boxes on the image
             // Notify user of object with the biggest bounding box
             if let biggestBox = boundingBoxes.max(by: { $0.rect.width < $1.rect.width }) {

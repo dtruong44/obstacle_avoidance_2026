@@ -1,0 +1,74 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-03-17T20:45:07Z",
+        "event" : "dataSourceCreated",
+        "id" : "E277C381-EFDA-4E60-8C32-91C1E5A69D33",
+        "subtitle" : "images",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-03-17T20:45:07Z",
+  "dataPathRelativeToProjectURL" : "../../../../../Downloads/images/",
+  "dataResult" : {
+    "classesCount" : 4,
+    "createdDate" : "2026-03-17T20:45:07Z",
+    "dataAnalysis" : {
+      "classifierAnalysis" : {
+
+      },
+      "issues" : [
+        {
+          "description" : "4 classes found, including flat-sidewalk-curb, object-pole, vehicle-bicycle",
+          "severity" : "debug"
+        },
+        {
+          "description" : "2115 annotations found, automatically creating validation set",
+          "severity" : "good"
+        },
+        {
+          "description" : "Smallest class is \"human-person\" with 5 images",
+          "severity" : "debug"
+        },
+        {
+          "description" : "Largest class is \"flat-sidewalk-curb\" with 982 images",
+          "severity" : "debug"
+        }
+      ],
+      "objectDetectorAnalysis" : {
+        "details" : {
+
+        },
+        "labelStats" : {
+          "flat-sidewalk-curb" : 982,
+          "human-person" : 5,
+          "object-pole" : 948,
+          "vehicle-bicycle" : 180
+        }
+      },
+      "summary" : {
+        "canUseValidation" : 1,
+        "classCount" : 4,
+        "counterExamples" : 0,
+        "sampleCount" : 999,
+        "suggestedMaxIterations" : 14000
+      }
+    },
+    "dataSourceID" : "EE236949-5BDF-4E97-A6F6-77E15A5A1E26",
+    "dataURL" : "file:///Users/elbronjackob/Downloads/images/",
+    "itemsCount" : 999
+  },
+  "dataURL" : "file:///Users/elbronjackob/Downloads/images/",
+  "experimentIDs" : [
+    "B6B4FE9D-26BE-4AF5-A5E2-D688FA028141"
+  ],
+  "id" : "EE236949-5BDF-4E97-A6F6-77E15A5A1E26",
+  "modifiedDate" : "2026-03-17T20:45:19Z",
+  "pathType" : 0,
+  "preferredFilename" : "images",
+  "title" : "images",
+  "version" : "1.0"
+}

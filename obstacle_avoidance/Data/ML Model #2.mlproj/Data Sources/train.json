@@ -1,0 +1,51 @@
+{
+  "activityEntities" : [
+    "dataSourceTrainingStarted",
+    [
+      {
+        "createdDate" : "2026-03-17T21:10:48Z",
+        "event" : "dataSourceTrainingStarted",
+        "id" : "D9AB469A-BCCF-494C-AC95-86D3FBE6CED5",
+        "subtitle" : "ML Model #2 1",
+        "title" : "Used By"
+      }
+    ],
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-03-17T21:07:47Z",
+        "event" : "dataSourceCreated",
+        "id" : "8B6B0AE3-8114-48B4-842E-9F1671DF3145",
+        "subtitle" : "train",
+        "title" : "Data Source Created"
+      }
+    ],
+    "dataSourceMetrics",
+    [
+      {
+        "createdDate" : "2026-03-17T21:10:48Z",
+        "event" : "dataSourceMetrics",
+        "id" : "7D68D0BA-6D64-440D-A64E-BBCE1B9CA131",
+        "subtitle" : "4 Classes, 200 Items",
+        "title" : "Data Summary"
+      }
+    ]
+  ],
+  "createdDate" : "2026-03-17T21:07:47Z",
+  "dataPathRelativeToProjectURL" : "../../../../../Downloads/images_organized/train/",
+  "dataResult" : {
+    "createdDate" : "2026-03-17T21:07:47Z",
+    "dataSourceID" : "F5685580-AB15-46F8-84D5-34CEBF851D50",
+    "dataURL" : "file:///Users/elbronjackob/Downloads/images_organized/train/"
+  },
+  "dataURL" : "file:///Users/elbronjackob/Downloads/images_organized/train/",
+  "experimentIDs" : [
+    "B6B4FE9D-26BE-4AF5-A5E2-D688FA028141"
+  ],
+  "id" : "F5685580-AB15-46F8-84D5-34CEBF851D50",
+  "modifiedDate" : "2026-03-17T21:10:48Z",
+  "pathType" : 0,
+  "preferredFilename" : "train",
+  "title" : "train",
+  "version" : "1.0"
+}
