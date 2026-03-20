@@ -81,7 +81,6 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
             print("Error loading Core ML model: \(error)")
         }
     }
-    
     func detectionDidComplete(request: VNRequest, error: Error?) {
         // Always unlock the pipeline when we are done so the camera doesn't freeze
         defer { self.isProcessingFrame = false }
