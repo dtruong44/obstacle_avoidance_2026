@@ -68,7 +68,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
     }
     
     func setupDetector() {
-        guard let modelURL = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
+        guard let modelURL = Bundle.main.url(forResource: "ML Model #2", withExtension: "mlmodelc") else {
             print("Error: Model file not found")
             return
         }
