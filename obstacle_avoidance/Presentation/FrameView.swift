@@ -89,6 +89,7 @@ struct FrameView: View {
             guard let audioOutput = AudioQueue.popHighestPriorityObject(threshold: 1) else {
                 return
             }
+            print(audioOutput)
             isSpeaking = true  // Claim immediately so the next tick can't pop and announce the same object
 
             if shouldSkipAnnouncement(objectName: audioOutput.objName, distance: audioOutput.distance) {

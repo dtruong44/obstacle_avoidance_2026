@@ -58,6 +58,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
         // Start ARKit session
         let config = ARWorldTrackingConfiguration()
         if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth){
+            config.frameSemantics.insert(.sceneDepth)
             arSession.delegate = self
             arSession.delegateQueue = sessionQueue
             arSession.run(config)
@@ -276,8 +277,6 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
                     let boxes = self?.createBoundingBoxes(from: observation, screenRect: screenRect)
                     if let boxes = boxes {
                         boundingBoxResults.append(contentsOf: boxes)
-                        // Uncommented debug prints remain preserved:
-                        // print("Bounding box: \(boxes)")
                     }
                 }
             }
@@ -301,64 +300,36 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
         )
     }
     
-    
-//    func session(_ session: ARSession, didUpdate frame: ARFrame) {
-//        // Prevent traffic jams. If we are still processing the last frame, drop this new one.
-//        guard !isProcessingFrame else { return }
-//        isProcessingFrame = true
-//        
-//        // Open the "Pre-packaged Meal" (The ARFrame)
-//        let pixelBuffer = frame.capturedImage // The video picture
-//        guard let depthMap = frame.sceneDepth?.depthMap else {
-//            // If LiDAR hasn't warmed up yet, cancel and try again next frame
-//            isProcessingFrame = false
-//            return
-//        }
-//        
-//        // Save the depth map for a split second!
-//        // We have to save this because YOLO takes a few milliseconds to think.
-//        // When YOLO finishes, we will need this map to calculate the distance.
-//        self.currentDepthMap = depthMap
-//        
-//        // Update the screen so the user sees the live camera feed
-//        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-//        if let cgImage = context.createCGImage(ciImage, from: ciImage.extent) {
-//            DispatchQueue.main.async { [unowned self] in
-//                self.frame = cgImage
-//            }
-//        }
-//        
-//        // Hand the picture to YOLO
-//        do {
-//            // Vision prefers the raw CVPixelBuffer, so we hand it directly
-//            let requestHandler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right, options: [:])
-//            try requestHandler.perform(self.requests)
-//        } catch {
-//            print("YOLO failed to process frame: \(error)")
-//            isProcessingFrame = false
-//        }
-//    }
-    
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
         guard !isProcessingFrame else { return }
         isProcessingFrame = true
-        
-        // Grab the image buffer
+
         let pixelBuffer = frame.capturedImage
-        
-        // PUSH TO BACKGROUND QUEUE (This prevents the deadlock!)
+
+        guard let depthMap = frame.sceneDepth?.depthMap else {
+            isProcessingFrame = false
+            return
+        }
+
+        self.currentDepthMap = depthMap
+
         sessionQueue.async {
-            let requestHandler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right, options: [:])
+            let requestHandler = VNImageRequestHandler(
+                cvPixelBuffer: pixelBuffer,
+                orientation: .right,
+                options: [:]
+            )
+
             do {
                 try requestHandler.perform(self.requests)
             } catch {
                 print("Vision failed: \(error)")
-                // If it fails, we MUST reset the gatekeeper on the main thread
-                DispatchQueue.main.async { self.isProcessingFrame = false }
+                DispatchQueue.main.async {
+                    self.isProcessingFrame = false
+                }
             }
         }
     }
-    
   
     
     func drawBoundingBox(_ bounds: CGRect) -> CALayer {

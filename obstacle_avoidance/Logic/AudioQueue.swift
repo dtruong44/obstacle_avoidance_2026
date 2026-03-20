@@ -51,8 +51,12 @@ extension AudioQueueVertex{
 
 class AudioQueue {
     public static var queue = Heap<AudioQueueVertex>()
+    
 
     static func addToHeap(_ processedObject: ProcessedObject) {
+//        lock.lock()
+//        defer { lock.unlock() } // Guarantee the door unlocks when finished
+        
         let newVertex = AudioQueueVertex(
             threatLevel: processedObject.threatLevel,
             objName: processedObject.objName,
@@ -64,17 +68,23 @@ class AudioQueue {
         queue.insert(newVertex)
     }
     static func clearQueue(){
+//        lock.lock()
+//        defer { lock.unlock() }
         return queue = Heap<AudioQueueVertex>()
     }
 
     static func popHighestPriorityObject(threshold: Float16) -> AudioQueueVertex? {
-        guard let candidate = queue.popMin() else{
-            return nil
+//            lock.lock()
+//            defer { lock.unlock() }
+            
+            guard let candidate = queue.popMin() else {
+                return nil
+            }
+            
+            if candidate.threatLevel >= threshold {
+                return candidate
+            } else {
+                return nil
+            }
         }
-        if candidate.threatLevel >= threshold{
-            return candidate
-        } else {
-            return nil
-        }
-    }
 }
