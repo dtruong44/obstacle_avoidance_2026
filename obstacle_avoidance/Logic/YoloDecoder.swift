@@ -23,7 +23,7 @@ struct YOLODecoder{
         return 1 / (1 + exp(-num))
     }
 
-    static func decodeOutput(multiArray: MLMultiArray, confidenceThreshold: Float = 0.5) -> [BoundingBox] {
+    static func decodeOutput(multiArray: MLMultiArray, confidenceThreshold: Float = 0.25) -> [BoundingBox] {
         let shape = multiArray.shape
         guard shape.count == 3,
             let channels = shape[1] as? Int, let boxes = shape[2] as? Int else {

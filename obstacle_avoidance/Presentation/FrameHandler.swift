@@ -68,7 +68,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
     }
     
     func setupDetector() {
-        guard let modelURL = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
+        guard let modelURL = Bundle.main.url(forResource: "ML Model V3", withExtension: "mlmodelc") else {
             print("Error: Model file not found")
             return
         }
@@ -237,7 +237,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
             if let observation = result as? VNCoreMLFeatureValueObservation,
                let multiArray = observation.featureValue.multiArrayValue{
                 print("name???: ",observation.featureName)
-                let decodedBoxes = YOLODecoder.decodeOutput(multiArray: multiArray, confidenceThreshold: 0.5)
+                let decodedBoxes = YOLODecoder.decodeOutput(multiArray: multiArray, confidenceThreshold: 0.25)
                 let filteredIndices = nonMaxSuppressionMultiClass(
                     numClasses: YOLODecoder.labels.count,
                     boundingBoxes: decodedBoxes,

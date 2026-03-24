@@ -1,0 +1,29 @@
+{
+  "activityEntities" : [
+    "projectCreated",
+    [
+      {
+        "createdDate" : "2026-03-24T01:43:06Z",
+        "event" : "projectCreated",
+        "id" : "448EC553-D91F-408A-A697-DA16043F0F4A",
+        "subtitle" : "ML Model V3",
+        "title" : "Project Created"
+      }
+    ]
+  ],
+  "authorName" : "Elbron Jackob",
+  "createdDate" : "2026-03-24T01:43:06Z",
+  "description" : "",
+  "id" : "53428612-ABB1-4F43-BC30-052CB89B2E92",
+  "license" : "",
+  "location" : "",
+  "modifiedDate" : "2026-03-24T01:43:06Z",
+  "projectName" : "ML Model V3",
+  "settingsEntity" : {
+    "snapshotOnExtendTraining" : true,
+    "snapshotOnResumeTraining" : false
+  },
+  "taskType" : "objectDetector",
+  "title" : "Object Detection",
+  "version" : "1.1"
+}
