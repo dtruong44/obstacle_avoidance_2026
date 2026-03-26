@@ -9,7 +9,7 @@ import Vision
 import RealityKit
 import UIKit
 import ARKit
-
+ 
 class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
     enum ConfigurationError: Error {
         case lidarDeviceUnavailable
