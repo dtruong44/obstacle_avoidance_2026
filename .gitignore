@@ -1,0 +1,7 @@
+modelTestingScript/modelPipeline/testingSet/general/images/*
+
+modelTestingScript/modelPipeline/testingSet/general/labels/*
+
+modelTestingScript/testingBatch/*
+
+.env

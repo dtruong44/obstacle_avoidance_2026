@@ -1,0 +1,31 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-03-17T21:07:56Z",
+        "event" : "dataSourceCreated",
+        "id" : "E0174F9B-1BD2-40EC-AB5C-712D3E295AEA",
+        "subtitle" : "valid",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-03-17T21:07:56Z",
+  "dataPathRelativeToProjectURL" : "../../../../../Downloads/images_organized/valid/",
+  "dataResult" : {
+    "createdDate" : "2026-03-17T21:07:56Z",
+    "dataSourceID" : "DF9EF799-4D37-46CB-A337-385CE49BC8E0",
+    "dataURL" : "file:///Users/elbronjackob/Downloads/images_organized/valid/"
+  },
+  "dataURL" : "file:///Users/elbronjackob/Downloads/images_organized/valid/",
+  "experimentIDs" : [
+    "B6B4FE9D-26BE-4AF5-A5E2-D688FA028141"
+  ],
+  "id" : "DF9EF799-4D37-46CB-A337-385CE49BC8E0",
+  "modifiedDate" : "2026-03-17T21:07:56Z",
+  "pathType" : 0,
+  "preferredFilename" : "valid",
+  "title" : "valid",
+  "version" : "1.0"
+}

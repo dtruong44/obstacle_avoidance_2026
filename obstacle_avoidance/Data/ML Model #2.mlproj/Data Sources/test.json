@@ -1,0 +1,31 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-03-17T21:08:07Z",
+        "event" : "dataSourceCreated",
+        "id" : "0D308838-2BB7-456F-B849-96DFFEAC4E47",
+        "subtitle" : "test",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-03-17T21:08:07Z",
+  "dataPathRelativeToProjectURL" : "../../../../../Downloads/images_organized/test/",
+  "dataResult" : {
+    "createdDate" : "2026-03-17T21:08:07Z",
+    "dataSourceID" : "E7AC2512-FA06-4A9A-A0F5-98749AEF89B8",
+    "dataURL" : "file:///Users/elbronjackob/Downloads/images_organized/test/"
+  },
+  "dataURL" : "file:///Users/elbronjackob/Downloads/images_organized/test/",
+  "experimentIDs" : [
+    "B6B4FE9D-26BE-4AF5-A5E2-D688FA028141"
+  ],
+  "id" : "E7AC2512-FA06-4A9A-A0F5-98749AEF89B8",
+  "modifiedDate" : "2026-03-17T21:08:07Z",
+  "pathType" : 0,
+  "preferredFilename" : "test",
+  "title" : "test",
+  "version" : "1.0"
+}
