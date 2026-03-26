@@ -9,7 +9,7 @@ import Vision
 import RealityKit
 import UIKit
 import ARKit
-
+ 
 class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
     enum ConfigurationError: Error {
         case lidarDeviceUnavailable
@@ -68,7 +68,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
     }
     
     func setupDetector() {
-        guard let modelURL = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
+        guard let modelURL = Bundle.main.url(forResource: "ML Model V3", withExtension: "mlmodelc") else {
             print("Error: Model file not found")
             return
         }
@@ -237,7 +237,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
             if let observation = result as? VNCoreMLFeatureValueObservation,
                let multiArray = observation.featureValue.multiArrayValue{
                 print("name???: ",observation.featureName)
-                let decodedBoxes = YOLODecoder.decodeOutput(multiArray: multiArray, confidenceThreshold: 0.5)
+                let decodedBoxes = YOLODecoder.decodeOutput(multiArray: multiArray, confidenceThreshold: 0.25)
                 let filteredIndices = nonMaxSuppressionMultiClass(
                     numClasses: YOLODecoder.labels.count,
                     boundingBoxes: decodedBoxes,
@@ -360,196 +360,22 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
             self.permissionGranted = false
         }
     }
-}
-extension FrameHandler: AVCaptureDataOutputSynchronizerDelegate {
-    func dataOutputSynchronizer(_ synchronizer: AVCaptureDataOutputSynchronizer,
-                                didOutput synchronizedDataCollection: AVCaptureSynchronizedDataCollection) {
-        // Retrieve the synchronized depth data
-        guard let syncedDepthData = synchronizedDataCollection
-                .synchronizedData(for: depthDataOutput) as? AVCaptureSynchronizedDepthData,
-              let syncedVideoData = synchronizedDataCollection
-                .synchronizedData(for: videoDataOutput) as? AVCaptureSynchronizedSampleBufferData
-        else { return }
-        // Process the video frame for yolo
-        if let cgImage = imageFromSampleBuffer(sampleBuffer: syncedVideoData.sampleBuffer) {
-            DispatchQueue.main.async { [unowned self] in
-                self.frame = cgImage
-            }
-        }
-        let depthMap = syncedDepthData.depthData.depthDataMap
-        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
-        let width = Float(CVPixelBufferGetWidth(depthMap))
-        let height = CVPixelBufferGetHeight(depthMap)
-        // Lock the pixel address so we are not moving around too much
-        //            ($0.rect.width * $0.rect.height) < ($1.rect.width * $1.rect.height)
-        // Process all detections from the current frame instead of only the highest-confidence one.
-        let boxes = self.boundingBoxes
-        guard !boxes.isEmpty else {
-            CVPixelBufferUnlockBaseAddress(depthMap, .readOnly)
-            return
-        }
-
-        // Get the baseadress of pixel and turn it into a Float16 so it is readable.
-        let baseAddress = unsafeBitCast(
-            CVPixelBufferGetBaseAddress(depthMap),
-            to: UnsafeMutablePointer<Float16>.self
-        )
-//        let centerX = Float(CGFloat(width) * (boxCenter.x / screenRect.width))
-//        let centerY = Float(CGFloat(height) * (boxCenter.y / screenRect.height))
-//        let windowSize = 100
-//        //Max and min ensure that when the bounty box is far left or far right of screen we do not get nevative value or values taht exceed the width
-//        let leftX = max(centerX - Float(windowSize), 0)
-//        let rightX = min(centerX + Float(windowSize), width - 1)
-//        let bottomY = max(centerY - Float(windowSize), 0)
-//        let topY = min(centerY + Float(windowSize), width - 1)
-////        var totalDepth: Float16 = 0
-//        var count = 0
-//        var depthSamples = [Float16]()
-//        //For each X and Y value find the depth and add it to a list to find the median value
-//        for yVal in Int(bottomY)...Int(topY) {
-//            for xVal in Int(leftX)...Int(rightX){
-//                depthSamples.append(baseAddress[yVal * Int(width) + xVal])
-////                totalDepth += baseAddress[y * Int(width) + x]
-//                count += 1
-//            }
-//        }
-        // Pre-compute median depths for each bounding box
-        var perBoxDetections: [(box: BoundingBox, medianDepth: Float16)] = []
-        var closestDepthForStress: Float16 = 0
-        var minDistanceForStress: Float = .greatestFiniteMagnitude
-
-        for box in boxes {
-            //  Compute bounding box corners in screen coordinates
-            let boxMinX = box.rect.minX
-            let boxMaxX = box.rect.maxX
-            let boxMinY = box.rect.minY
-            let boxMaxY = box.rect.maxY
-
-            // Convert from screen coordinates to depth-map coordinates
-            let depthMinX = Int((boxMinX / screenRect.width) * CGFloat(width))
-            let depthMaxX = Int((boxMaxX / screenRect.width) * CGFloat(width))
-            let depthMinY = Int((boxMinY / screenRect.height) * CGFloat(height))
-            let depthMaxY = Int((boxMaxY / screenRect.height) * CGFloat(height))
-
-            // Clamp the values so they never go outside the depth buffer array
-            let clampedMinX = max(depthMinX, 0)
-            let clampedMaxX = min(depthMaxX, Int(width) - 1)
-            let clampedMinY = max(depthMinY, 0)
-            let clampedMaxY = min(depthMaxY, Int(height) - 1)
-
-            var depthSamples = [Float16]()
-            for yVal in clampedMinY...clampedMaxY {
-                for xVal in clampedMinX...clampedMaxX {
-                    let depthIndex = yVal * Int(width) + xVal
-                    depthSamples.append(baseAddress[depthIndex])
-                }
-            }
-
-            let medianDepth = self.findMedian(distances: depthSamples)
-
-            // Remove outliers for this box.
-            guard medianDepth > 0.2 && medianDepth < 8.0 else {
-                continue
-            }
-
-            perBoxDetections.append((box: box, medianDepth: medianDepth))
-
-            let distanceFloat = Float(medianDepth)
-            if distanceFloat < minDistanceForStress {
-                minDistanceForStress = distanceFloat
-                closestDepthForStress = medianDepth
-            }
-        }
-
-        // If none of the boxes produced a valid median depth, bail out.
-        guard !perBoxDetections.isEmpty else {
-            CVPixelBufferUnlockBaseAddress(depthMap, .readOnly)
-            return
-        }
-
-        // Use the closest valid detection to drive the stress indicator.
-        stress = self.updateDepth(closestDepthForStress)
-        CVPixelBufferUnlockBaseAddress(depthMap, .readOnly)
-        DispatchQueue.main.async {
-            // For each detection with a valid median depth, compute and enqueue its threat.
-            for (box, medianDepth) in perBoxDetections {
-                self.boxCenter = CGPoint(x: box.rect.midX, y: box.rect.midY)
-                self.objectName = box.name
-                self.objectCoordinates = box.rect
-                self.confidence = box.score
-                self.corridorPosition = box.direction
-                self.objectIDD = box.classIndex
-                self.vert = box.vert
-                self.objectDistance = medianDepth
-
-                let objectDetected = DetectedObject(
-                    objName: self.objectName,
-                    distance: self.objectDistance,
-                    corridorPosition: self.corridorPosition,
-                    vert: self.vert,
-                    confidence: self.confidence
-                )
-                let block = DecisionBlock(detectedObject: objectDetected)
-                let objectThreatLevel = block.computeThreatLevel(for: objectDetected)
-                let processedObject = ProcessedObject(
-                    objName: self.objectName,
-                    distance: self.objectDistance,
-                    corridorPosition: self.corridorPosition,
-                    vert: self.vert,
-                    threatLevel: objectThreatLevel
-                )
-                block.processDetectedObjects(processed: processedObject)
-            }
-
-            //let audioOutput = AudioQueue.popHighestPriorityObject(threshold: 1)
-//            if audioOutput?.threatLevel ?? 0 > 1{
-//                content.append("Object name: \(audioOutput!.objName),")
-//                content.append("Object direction: \(audioOutput!.corridorPosition),")
-//                content.append("Object Verticality: \(audioOutput!.vert),")
-//                content.append("Object distance: \(audioOutput!.distance),")
-//                content.append("Threat level: \(audioOutput!.threatLevel),")
-//                content.append("Distance as a Float: \(Float(audioOutput!.distance)),\n")
-
-//                //print(content)
-//            }
-        }
-    }
     
-    func updateDepth(_ z: Float16) -> CGFloat {
-        let d = Float(z)                 // convert once
-        let maxD = Float(maxDepth)       // ensure same type
-
-        let normalized = max(0, min(1, (1 - (d / maxD))))
-        return CGFloat(normalized)
-    }
-
-  /*
-    func findMedian(distances: [Float16]) -> Float16
-    {
-        let count = distances.count
-        guard count > 0 else { return 0 }
-        if count % 2 == 1 {
-            return distances[count / 2] // Odd number of elements: return the middle one.
-        } else {
-            // Even number of elements: average the two middle ones.
-            let lower = distances[count / 2 - 1]
-            let upper = distances[count / 2]
-            return (lower + upper) / 2
+    // Everything below is me trying to figure out the display of bounding boxes on the screen
+    struct CameraPreview: UIViewRepresentable {
+        var session: ARSession
+        
+        func makeUIView(context: Context) -> ARView {
+            // Create an ARKit View
+            let arView = ARView(frame: .zero)
+            
+            // Tell the view to use our already-running ARSession
+            arView.session = session
+            
+            return arView
         }
-    }
-    */
-    //New function, replaces commented one above - Bilal.
-    func findMedian(distances: [Float16]) -> Float16 {
-    let filtered = distances.filter { $0 > 0 && !$0.isNaN }
-    guard filtered.count > 0 else { return 0 }
-
-    let sorted = filtered.sorted()
-    let count = sorted.count
-
-    if count % 2 == 1 {
-        return sorted[count / 2]
-    } else {
-        return (sorted[count/2 - 1] + sorted[count/2]) / 2
+        
+        func updateUIView(_ uiView: ARView, context: Context) {}
     }
     
     struct BoundingBoxLayer: UIViewRepresentable {
