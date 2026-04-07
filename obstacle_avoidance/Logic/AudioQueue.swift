@@ -31,6 +31,7 @@ extension AudioQueueVertex{
             return floor(distance)
         }
     }
+    
     var formattedDist: String{
         let unitPref = UserDefaults.standard.string(forKey: "measurementType") ?? "feet"
         if unitPref == "meters"{

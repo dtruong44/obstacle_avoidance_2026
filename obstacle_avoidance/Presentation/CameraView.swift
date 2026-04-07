@@ -19,7 +19,9 @@ struct CameraView: View {
             }
 
             // 2. The Logic & Announcements (Transparent overlay)
-            FrameView(image: nil, boundingBoxes: model.boundingBoxes)
+//            FrameView(image: nil, boundingBoxes: model.boundingBoxes)
+            FrameView(frameHandler: model)
+
             
             // 3. Your Corridor Slices
             CorridorOverlay(corridor: $model.corridorGeometry, stress: model.stress)
