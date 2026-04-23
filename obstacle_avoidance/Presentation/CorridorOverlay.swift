@@ -1,12 +1,5 @@
-//
-//  CorridorOverlayView.swift
-//  obstacle_avoidance
-//
-//  Created by Carlos Breach on 4/11/25.
-//
+//  CorridorOverlay.swift
 import SwiftUI
-import Foundation
-import AVFoundation
 
 struct CorridorOverlay: View {
     @Binding var corridor: CorridorGeometry?
@@ -14,34 +7,15 @@ struct CorridorOverlay: View {
 
     var body: some View {
         GeometryReader { geo in
-            let size = geo.size
-            let geometry = calculateCorridor(size: size, stress: stress)
+            let geometry = calculateCorridor(size: geo.size, stress: stress)
 
             ZStack(alignment: .topLeading) {
-
-                // LEFT SLICE
-                Rectangle()
-                    .fill(Color.red.opacity(0.3))
-                    .frame(width: geometry.left.width,
-                           height: geometry.left.height)
-                    .position(x: geometry.left.midX,
-                              y: geometry.left.midY)
-
-                // CENTER SLICE
-                Rectangle()
-                    .fill(Color.green.opacity(0.3))
-                    .frame(width: geometry.center.width,
-                           height: geometry.center.height)
-                    .position(x: geometry.center.midX,
-                              y: geometry.center.midY)
-
-                // RIGHT SLICE
-                Rectangle()
-                    .fill(Color.blue.opacity(0.3))
-                    .frame(width: geometry.right.width,
-                           height: geometry.right.height)
-                    .position(x: geometry.right.midX,
-                              y: geometry.right.midY)
+                // Loop through and render all 9 unique strips
+                ForEach(0..<3) { i in
+                    renderStrip(geometry.leftStrips[i])
+                    renderStrip(geometry.centerStrips[i])
+                    renderStrip(geometry.rightStrips[i])
+                }
             }
             .onAppear {
                 DispatchQueue.main.async {
@@ -50,5 +24,13 @@ struct CorridorOverlay: View {
             }
         }
         .allowsHitTesting(false)
+    }
+
+    private func renderStrip(_ strip: (rect: CGRect, color: Color)) -> some View {
+        Rectangle()
+            .fill(strip.color.opacity(0.35)) // Slightly higher opacity to see the colors clearly
+            .frame(width: strip.rect.width, height: strip.rect.height)
+            .position(x: strip.rect.midX, y: strip.rect.midY)
+            .border(strip.color.opacity(0.5), width: 1) // Optional: adds a thin line between strips
     }
 }
