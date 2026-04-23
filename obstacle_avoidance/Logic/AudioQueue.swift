@@ -62,6 +62,18 @@ class AudioQueue {
     public static var queue: [AudioQueueVertex] = []
     private static var lastGlobalAnnouncementAt: Date = .distantPast
     private static var lastAnnouncementByKey: [String: Date] = [:]
+    /// No pop until this time (estimated VoiceOver duration for the last popped utterance).
+    private static var outputBusyUntil: Date = .distantPast
+    /// Reduces back-to-back announcements for the same object label (e.g. left then center).
+    private static var lastAnnouncementByObjectName: [String: Date] = [:]
+
+    private static let estimatedSpeechSecondsPerChar: Double = 0.058
+    private static let estimatedSpeechBaseSeconds: Double = 0.45
+    private static let estimatedSpeechMinSeconds: TimeInterval = 2.1
+    private static let estimatedSpeechMaxSeconds: TimeInterval = 7.5
+    private static let replaceMinThreatDelta: Float16 = 0.15
+    private static let replaceMinDistanceCloser: Float16 = 0.7
+    private static let perObjectNameMinInterval: TimeInterval = 3.2
 
     static func makeDedupKey(name: String, direction: String, vertical: String) -> String {
         "\(name.lowercased())|\(direction.lowercased())|\(vertical.lowercased())"
@@ -101,8 +113,12 @@ class AudioQueue {
         trimQueueIfNeeded()
     }
 
-    static func clearQueue(){
+    static func clearQueue() {
         queue.removeAll()
+        outputBusyUntil = .distantPast
+        lastGlobalAnnouncementAt = .distantPast
+        lastAnnouncementByKey.removeAll()
+        lastAnnouncementByObjectName.removeAll()
     }
 
     static func popHighestPriorityObject(threshold: Float16) -> AudioQueueVertex? {
@@ -126,29 +142,46 @@ class AudioQueue {
 
     private static func shouldReplace(existing: AudioQueueVertex, with incoming: AudioQueueVertex) -> Bool {
         if incoming.severityBand > existing.severityBand { return true }
-        if incoming.threatLevel > existing.threatLevel + 0.05 { return true }
+        if incoming.threatLevel > existing.threatLevel + replaceMinThreatDelta { return true }
 
-        let gotCloserEnough = existing.distance - incoming.distance >= AudioPolicyConfig.distanceDeltaForReplacement
+        let gotCloserEnough = existing.distance - incoming.distance >= replaceMinDistanceCloser
         return gotCloserEnough
     }
 
+    private static func estimatedAnnouncementDuration(for vertex: AudioQueueVertex) -> TimeInterval {
+        let text = "\(vertex.objName) \(vertex.corridorPosition) \(vertex.formattedDist)"
+        let charCount = max(text.count, 1)
+        let raw = estimatedSpeechBaseSeconds + Double(charCount) * estimatedSpeechSecondsPerChar
+        return min(max(raw, estimatedSpeechMinSeconds), estimatedSpeechMaxSeconds)
+    }
+
     private static func canSpeak(candidate: AudioQueueVertex, now: Date) -> Bool {
-        if candidate.severityBand == .critical {
-            let lastAt = lastAnnouncementByKey[candidate.dedupKey] ?? .distantPast
-            return now.timeIntervalSince(lastAt) >= AudioPolicyConfig.criticalCooldown
-        }
+        guard now >= outputBusyUntil else { return false }
 
         guard now.timeIntervalSince(lastGlobalAnnouncementAt) >= AudioPolicyConfig.globalCooldown else {
             return false
         }
 
-        let lastAt = lastAnnouncementByKey[candidate.dedupKey] ?? .distantPast
-        return now.timeIntervalSince(lastAt) >= AudioPolicyConfig.perKeyCooldown
+        let lastAtKey = lastAnnouncementByKey[candidate.dedupKey] ?? .distantPast
+        guard now.timeIntervalSince(lastAtKey) >= AudioPolicyConfig.perKeyCooldown else {
+            return false
+        }
+
+        let nameKey = candidate.objName.lowercased()
+        let lastAtName = lastAnnouncementByObjectName[nameKey] ?? .distantPast
+        guard now.timeIntervalSince(lastAtName) >= perObjectNameMinInterval else {
+            return false
+        }
+
+        return true
     }
 
     private static func rememberAnnouncement(_ candidate: AudioQueueVertex, now: Date) {
+        let busyUntil = now.addingTimeInterval(estimatedAnnouncementDuration(for: candidate))
+        outputBusyUntil = max(outputBusyUntil, busyUntil)
         lastGlobalAnnouncementAt = now
         lastAnnouncementByKey[candidate.dedupKey] = now
+        lastAnnouncementByObjectName[candidate.objName.lowercased()] = now
     }
 
     private static func pruneExpired(referenceTime now: Date = Date()) {
