@@ -1,53 +1,45 @@
-//
-//  CorridorUtils.swift
-//  obstacle_avoidance
-//
-//  Created by Carlos Breach on 4/13/25.
-//
+// CorridorUtils.swift
 
 import Foundation
+import CoreGraphics
 
 struct CorridorUtils {
-    enum CorridorPosition {
-        case inside
-        case left
-        case right
-        case ahead
-    }
-    
-    static func corridorPosition(_ point: CGPoint, corridor: CorridorGeometry) -> CorridorPosition {
-
-        // 1. Check left slice
-        if corridor.left.contains(point) {
-            return .left
-        }
-
-        // 2. Check center slice
-        if corridor.center.contains(point) {
-            return .inside   // or .center if you prefer
-        }
-
-        // 3. Check right slice
-        if corridor.right.contains(point) {
-            return .right
-        }
-
-        // 4. If not in any slice, it's ahead (outside corridor)
-        return .ahead
-    }
     
     static func determinePosition(_ bbox: CGRect, corridor: CorridorGeometry) -> String {
-        let point = CGPoint(x: bbox.midX, y: bbox.midY)
+        var leftHits = 0
+        var centerHits = 0
+        var rightHits = 0
 
-        switch corridorPosition(point, corridor: corridor) {
-        case .left:
-            return "Left"
-        case .inside:
-            return "Center"
-        case .right:
-            return "Right"
-        case .ahead:
-            return "Outside"
+        // 1. Count intersections in the 3 Left strips
+        for strip in corridor.leftStrips {
+            if bbox.intersects(strip.rect) {
+                leftHits += 1
+            }
         }
+
+        // 2. Count intersections in the 3 Center strips
+        for strip in corridor.centerStrips {
+            if bbox.intersects(strip.rect) {
+                centerHits += 1
+            }
+        }
+
+        // 3. Count intersections in the 3 Right strips
+        for strip in corridor.rightStrips {
+            if bbox.intersects(strip.rect) {
+                rightHits += 1
+            }
+        }
+
+        // 4. Majority Rules Determination
+        // If an object hits more strips in one zone than others, it's assigned there.
+        let counts = ["Left": leftHits, "Center": centerHits, "Right": rightHits]
+        
+        // Find the zone with the highest number of hits
+        if let maxHit = counts.max(by: { $0.value < $1.value }), maxHit.value > 0 {
+            return maxHit.key
+        }
+
+        return "Outside"
     }
 }
