@@ -31,11 +31,12 @@ struct  ProcessedObject {
     let corridorPosition: String
     let vert: String
     let threatLevel: Float16
+    let severityBand: AudioSeverityBand
 }
 
 class DecisionBlock {
     var detectedObject: DetectedObject
-    var processed: ProcessedObject!
+    private static var riskFrameCountByKey: [String: Int] = [:]
 
     // Initializer
     init(detectedObject: DetectedObject) {
@@ -61,18 +62,57 @@ class DecisionBlock {
         }
     }
 
+    private func computeSeverityBand(for threat: Float16) -> AudioSeverityBand {
+        if threat >= AudioPolicyConfig.criticalThreatThreshold {
+            return .critical
+        }
+        if threat >= AudioPolicyConfig.highThreatThreshold {
+            return .high
+        }
+        if threat >= AudioPolicyConfig.minimumThreatToSpeak {
+            return .normal
+        }
+        return .low
+    }
+
+    private func passesHysteresis(threat: Float16) -> Bool {
+        let key = AudioQueue.makeDedupKey(
+            name: detectedObject.objName,
+            direction: detectedObject.corridorPosition,
+            vertical: detectedObject.vert
+        )
+
+        if threat < AudioPolicyConfig.minimumThreatToSpeak {
+            Self.riskFrameCountByKey[key] = 0
+            return false
+        }
+
+        let previous = Self.riskFrameCountByKey[key] ?? 0
+        let current = previous + 1
+        Self.riskFrameCountByKey[key] = current
+
+        if threat >= AudioPolicyConfig.highThreatThreshold {
+            return true
+        }
+        return current >= AudioPolicyConfig.minRiskyFramesForNormal
+    }
+
     // Given the provided information about the object, computes the threat level to create a processedObject
-    func processDetectedObjects(processed: ProcessedObject) {
+    func processDetectedObjects() {
+        let threat = computeThreatLevel(for: detectedObject)
+        let severityBand = computeSeverityBand(for: threat)
+
         let processed = ProcessedObject(
             objName: detectedObject.objName,
             distance: detectedObject.distance,
             corridorPosition: detectedObject.corridorPosition,
             vert: detectedObject.vert,
-            threatLevel: computeThreatLevel(for: detectedObject)
+            threatLevel: threat,
+            severityBand: severityBand
             )
 
         // Passes each instance of a detected object into the Queue
-        if processed.threatLevel != 0{
+        if passesHysteresis(threat: processed.threatLevel) {
             AudioQueue.addToHeap(processed)
         } else{
             return

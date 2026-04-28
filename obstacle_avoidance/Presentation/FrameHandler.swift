@@ -203,15 +203,7 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
                                                 vert: self.vert)
             
             let block = DecisionBlock(detectedObject: objectDetected)
-            let objectThreatLevel = block.computeThreatLevel(for: objectDetected)
-            
-            let processedObject = ProcessedObject(objName: self.objectName,
-                                                  distance: self.objectDistance,
-                                                  corridorPosition: self.corridorPosition,
-                                                  vert: self.vert,
-                                                  threatLevel: objectThreatLevel)
-            
-            block.processDetectedObjects(processed: processedObject)
+            block.processDetectedObjects()
         }
     }
     
