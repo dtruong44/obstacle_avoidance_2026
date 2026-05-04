@@ -18,14 +18,14 @@ import SwiftUI
 import Foundation
 
 // Create a struct holding parameters that pass through logic
-struct  DetectedObject {
+struct DetectedObject {
     let objName: String
     let distance: Float16
     let corridorPosition: String
     let vert: String
 }
 
-struct  ProcessedObject {
+struct ProcessedObject {
     let objName: String
     let distance: Float16
     let corridorPosition: String

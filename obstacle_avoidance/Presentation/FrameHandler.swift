@@ -98,129 +98,149 @@ class FrameHandler: NSObject, ObservableObject, ARSessionDelegate {
     }
     
     func calculateDistanceAndThreat() {
-        // 1. Grab the depth map we temporarily saved
         guard let depthMap = self.currentDepthMap else { return }
         guard !self.boundingBoxes.isEmpty else { return }
-        
-        // 2. Lock the depth map in memory so we can safely read its pixels
+
+        // Lock depth buffer
         CVPixelBufferLockBaseAddress(depthMap, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
-        
+
         let width = CVPixelBufferGetWidth(depthMap)
         let height = CVPixelBufferGetHeight(depthMap)
-        let baseAddress = unsafeBitCast(CVPixelBufferGetBaseAddress(depthMap), to: UnsafeMutablePointer<Float16>.self)
-        
-        // Variables to track our winning "Highest Threat" object
-        var highestThreatScore: Float = -1.0
-        var mostDangerousBox: BoundingBox? = nil
-        var mostDangerousDepth: Float16 = 0.0
-        
-        // 3. 🚨 THE O(n) LOOP: Evaluate EVERY box on the screen
+        let format = CVPixelBufferGetPixelFormatType(depthMap)
+
+        // Select the correct pointer type as we have to extract correct number of bits
+        let baseFloat32: UnsafeMutablePointer<Float>?
+        let baseFloat16: UnsafeMutablePointer<Float16>?
+
+        switch format {
+        case kCVPixelFormatType_DepthFloat32,
+             kCVPixelFormatType_DisparityFloat32:
+            baseFloat32 = CVPixelBufferGetBaseAddress(depthMap)?
+                .assumingMemoryBound(to: Float.self)
+            baseFloat16 = nil
+
+        case kCVPixelFormatType_DepthFloat16,
+             kCVPixelFormatType_DisparityFloat16:
+            baseFloat16 = CVPixelBufferGetBaseAddress(depthMap)?
+                .assumingMemoryBound(to: Float16.self)
+            baseFloat32 = nil
+
+        default:
+            print("Unsupported depth format:", format)
+            return
+        }
+
+        func readDepthMeters(_ index: Int) -> Float {
+            let raw: Float
+
+            if let f32 = baseFloat32 {
+                raw = f32[index]
+            } else if let f16 = baseFloat16 {
+                raw = Float(f16[index])
+            } else {
+                return .nan
+            }
+
+            // Convert disparity → meters
+            if format == kCVPixelFormatType_DisparityFloat16 ||
+               format == kCVPixelFormatType_DisparityFloat32 {
+                return raw > 0 ? 1.0 / raw : .nan
+            }
+
+            // Already meters
+            return raw
+        }
+
+        // Find the median distance as distribution of depth samples are skewed
+        func median(_ values: [Float]) -> Float {
+            guard !values.isEmpty else { return .nan }
+            let sorted = values.sorted()
+            let mid = sorted.count / 2
+            return sorted.count % 2 == 0
+                ? (sorted[mid - 1] + sorted[mid]) / 2
+                : sorted[mid]
+        }
+
+        // Calculate the threat based on the depth samples
+        var highestThreat: Float = -1
+        var mostDangerousBox: BoundingBox?
+        var mostDangerousDepth: Float = 0
+
         for box in self.boundingBoxes {
-            
-            // Convert the 2D screen coordinates into depth map resolution
-            let depthMinX = Int((box.rect.minX / screenRect.width) * CGFloat(width))
-            let depthMaxX = Int((box.rect.maxX / screenRect.width) * CGFloat(width))
-            let depthMinY = Int((box.rect.minY / screenRect.height) * CGFloat(height))
-            let depthMaxY = Int((box.rect.maxY / screenRect.height) * CGFloat(height))
-            
-            // Clamp values to prevent crashing
-            let clampedMinX = max(depthMinX, 0)
-            let clampedMaxX = min(depthMaxX, Int(width) - 1)
-            let clampedMinY = max(depthMinY, 0)
-            let clampedMaxY = min(depthMaxY, Int(height) - 1)
-            
-            var depthSamples = [Float16]()
-            
-            // Grab the depth pixels for THIS specific box
-            for yVal in clampedMinY...clampedMaxY {
-                for xVal in clampedMinX...clampedMaxX {
-                    let depthIndex = yVal * Int(width) + xVal
-                    depthSamples.append(baseAddress[depthIndex])
+
+            // Convert UI rect to depth map coordinates
+            let minX = Int((box.rect.minX / screenRect.width) * CGFloat(width))
+            let maxX = Int((box.rect.maxX / screenRect.width) * CGFloat(width))
+            let minY = Int((box.rect.minY / screenRect.height) * CGFloat(height))
+            let maxY = Int((box.rect.maxY / screenRect.height) * CGFloat(height))
+
+            let x0 = max(minX, 0)
+            let x1 = min(maxX, width - 1)
+            let y0 = max(minY, 0)
+            let y1 = min(maxY, height - 1)
+
+            var samples = [Float]()
+            samples.reserveCapacity((x1 - x0 + 1) * (y1 - y0 + 1))
+
+            for y in y0...y1 {
+                for x in x0...x1 {
+                    let idx = y * width + x
+                    let d = readDepthMeters(idx)
+                    if d.isFinite { samples.append(d) }
                 }
             }
-            
-            let medianDepth = self.findMedian(distances: depthSamples)
-            
-            // Ignore crazy outliers (closer than 0.2m or further than 8.0m)
-            guard medianDepth > 0.2 && medianDepth < 8.0 else { continue }
-            
-            // ---------------------------------------------------------
-            // CALCULATE THE THREAT SCORE FOR THIS BOX
-            // ---------------------------------------------------------
-            let depthFloat = Float(medianDepth)
-            let proximityFactor = max(0, 1.0 - (depthFloat / self.maxDepth))
-            
-            // Centeredness: box.rect.midX / screenRect.width gives 0.0 to 1.0
-            let distanceFromCenter = abs(Float(box.rect.midX / screenRect.width) - 0.5)
-            let centerednessFactor = max(0, 1.0 - (distanceFromCenter * 2.0))
-            
-            // Weights: 70% Distance, 30% Center Position
-            let weightDistance: Float = 0.7
-            let weightCenter: Float = 0.3
-            let currentThreat = (proximityFactor * weightDistance) + (centerednessFactor * weightCenter)
-            
-            // Is this the most dangerous thing we've seen so far?
-            if currentThreat > highestThreatScore {
-                highestThreatScore = currentThreat
+
+            let depth = median(samples)
+
+            // Ignore invalid or extreme values
+            guard depth > 0.2 && depth < 8.0 else { continue }
+
+            // Threat score
+            let proximity = max(0, 1.0 - (depth / self.maxDepth))
+            let distFromCenter = abs(Float(box.rect.midX / screenRect.width) - 0.5)
+            let centered = max(0, 1.0 - distFromCenter * 2.0)
+
+            let threat = proximity * 0.7 + centered * 0.3
+
+            if threat > highestThreat {
+                highestThreat = threat
                 mostDangerousBox = box
-                mostDangerousDepth = medianDepth
+                mostDangerousDepth = depth
             }
         }
-        
-        // 4. Ensure we actually found a valid dangerous box
-        guard let winningBox = mostDangerousBox else { return }
-        
-        // ---------------------------------------------------------
-        // 🚨 THE LOW-PASS FILTER (EMA) - Applied ONLY to the winner!
-        // ---------------------------------------------------------
-        let objectIdentifier = winningBox.name
-        let alpha: Float16 = 0.3 // 30% new data, 70% historical
-        let previousSmoothed = self.smoothedDistances[objectIdentifier] ?? mostDangerousDepth
-        let smoothedDepth = (alpha * mostDangerousDepth) + ((1.0 - alpha) * previousSmoothed)
-        
-        // Save it for the next frame
-        self.smoothedDistances[objectIdentifier] = smoothedDepth
 
-        // 5. Update the UI and Threat logic (Main Thread!)
+        guard let winningBox = mostDangerousBox else { return }
+
+        // LOW-PASS FILTER
+        let id = winningBox.name
+        let alpha: Float = 0.3
+        let prev = Float(self.smoothedDistances[id] ?? Float16(mostDangerousDepth))
+        let smoothed = alpha * mostDangerousDepth + (1 - alpha) * prev
+
+        self.smoothedDistances[id] = Float16(smoothed)
+
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
-            // 👉 Publish the single winning box so the UI can draw it
+
             self.targetedBox = winningBox
-            
-            // Update state variables with smoothed data
-            self.objectDistance = smoothedDepth
-            self.stress = self.updateDepth(smoothedDepth)
+            self.objectDistance = Float16(smoothed)
+            self.stress = self.updateDepth(Float16(smoothed))
             self.objectName = winningBox.name
             self.corridorPosition = winningBox.direction
             self.vert = winningBox.vert
-            
-            // Feed into DecisionBlock
-            let objectDetected = DetectedObject(objName: self.objectName,
-                                                distance: self.objectDistance,
-                                                corridorPosition: self.corridorPosition,
-                                                vert: self.vert)
-            
-            let block = DecisionBlock(detectedObject: objectDetected)
-            block.processDetectedObjects()
+
+            let obj = DetectedObject(
+                objName: self.objectName,
+                distance: self.objectDistance,
+                corridorPosition: self.corridorPosition,
+                vert: self.vert
+            )
+
+            DecisionBlock(detectedObject: obj).processDetectedObjects()
         }
     }
-    
-    //New function, replaces commented one above - Bilal.
-    func findMedian(distances: [Float16]) -> Float16 {
-        let filtered = distances.filter { $0 > 0 && !$0.isNaN }
-        guard filtered.count > 0 else { return 0 }
-        
-        let sorted = filtered.sorted()
-        let count = sorted.count
-        
-        if count % 2 == 1 {
-            return sorted[count / 2]
-        } else {
-            return (sorted[count/2 - 1] + sorted[count/2]) / 2
-        }
-    }
+
     
     func updateDepth(_ z: Float16) -> CGFloat {
         let d = Float(z)                 // convert once

@@ -10,7 +10,7 @@ struct CorridorOverlay: View {
             let geometry = calculateCorridor(size: geo.size, stress: stress)
 
             ZStack(alignment: .topLeading) {
-                // Loop through and render all 9 unique strips
+//                 Loop through and render all 9 unique strips
                 ForEach(0..<3) { i in
                     renderStrip(geometry.leftStrips[i])
                     renderStrip(geometry.centerStrips[i])
