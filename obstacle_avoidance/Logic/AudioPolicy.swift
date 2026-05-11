@@ -30,4 +30,15 @@ enum AudioPolicyConfig {
     // Hysteresis
     static let minRiskyFramesForNormal = 2
     static let minRiskyFramesForLow = 3
+
+    static func informationFrequencyMultiplier() -> Double {
+        let stored = UserDefaults.standard.double(forKey: "informationFrequencyMultiplier")
+        let multiplier = stored == 0 ? 1.0 : stored
+        return min(max(multiplier, 0.5), 2.0)
+    }
+
+    static func scaledInterval(_ base: TimeInterval) -> TimeInterval {
+        let multiplier = informationFrequencyMultiplier()
+        return base / multiplier
+    }
 }

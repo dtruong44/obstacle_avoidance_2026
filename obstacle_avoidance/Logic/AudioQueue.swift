@@ -98,7 +98,7 @@ class AudioQueue {
             severityBand: processedObject.severityBand,
             dedupKey: dedupKey,
             createdAt: now,
-            expiresAt: now.addingTimeInterval(AudioPolicyConfig.entryTTL)
+            expiresAt: now.addingTimeInterval(AudioPolicyConfig.scaledInterval(AudioPolicyConfig.entryTTL))
         )
 
         if let existingIndex = queue.firstIndex(where: { $0.dedupKey == dedupKey }) {
@@ -152,24 +152,28 @@ class AudioQueue {
         let text = "\(vertex.objName) \(vertex.corridorPosition) \(vertex.formattedDist)"
         let charCount = max(text.count, 1)
         let raw = estimatedSpeechBaseSeconds + Double(charCount) * estimatedSpeechSecondsPerChar
-        return min(max(raw, estimatedSpeechMinSeconds), estimatedSpeechMaxSeconds)
+        let boundedDuration = min(max(raw, estimatedSpeechMinSeconds), estimatedSpeechMaxSeconds)
+        return AudioPolicyConfig.scaledInterval(boundedDuration)
     }
 
     private static func canSpeak(candidate: AudioQueueVertex, now: Date) -> Bool {
         guard now >= outputBusyUntil else { return false }
 
-        guard now.timeIntervalSince(lastGlobalAnnouncementAt) >= AudioPolicyConfig.globalCooldown else {
+        let globalCooldown = candidate.severityBand == .critical
+            ? AudioPolicyConfig.criticalCooldown
+            : AudioPolicyConfig.globalCooldown
+        guard now.timeIntervalSince(lastGlobalAnnouncementAt) >= AudioPolicyConfig.scaledInterval(globalCooldown) else {
             return false
         }
 
         let lastAtKey = lastAnnouncementByKey[candidate.dedupKey] ?? .distantPast
-        guard now.timeIntervalSince(lastAtKey) >= AudioPolicyConfig.perKeyCooldown else {
+        guard now.timeIntervalSince(lastAtKey) >= AudioPolicyConfig.scaledInterval(AudioPolicyConfig.perKeyCooldown) else {
             return false
         }
 
         let nameKey = candidate.objName.lowercased()
         let lastAtName = lastAnnouncementByObjectName[nameKey] ?? .distantPast
-        guard now.timeIntervalSince(lastAtName) >= perObjectNameMinInterval else {
+        guard now.timeIntervalSince(lastAtName) >= AudioPolicyConfig.scaledInterval(perObjectNameMinInterval) else {
             return false
         }
 

@@ -85,7 +85,8 @@ extension Database {
                  measurementType: String,
                  userHeight: Int,
                  hapticFeedback: Bool,
-                 locationSharing: Bool) async {
+                 locationSharing: Bool,
+                 informationFrequencyMultiplier: Double = 1.0) async {
         print("Adding user:", username)
         let salt = createSalt()
         let hashedPassword = hashSaltPassword(password: password, salt: salt)
@@ -112,7 +113,8 @@ extension Database {
                 measurementType: measurementType,
                 userHeight: userHeight,
                 hapticFeedback: hapticFeedback,
-                locationSharing: locationSharing
+                locationSharing: locationSharing,
+                informationFrequencyMultiplier: informationFrequencyMultiplier
             )
             let response = try await client
                            .from("users")
@@ -231,12 +233,14 @@ extension Database {
                                userHeight: Int?,
                                locationSharing: Bool?,
                                measurementType: String?,
-                               hapticFeedback: Bool?) async {
+                               hapticFeedback: Bool?,
+                               informationFrequencyMultiplier: Double?) async {
         let update = UserPreferencesUpdate(
             userHeight: userHeight,
             locationSharing: locationSharing,
             measurementType: measurementType,
-            hapticFeedback: hapticFeedback
+            hapticFeedback: hapticFeedback,
+            informationFrequencyMultiplier: informationFrequencyMultiplier
         )
 
         do {
@@ -376,7 +380,7 @@ extension Database {
         do {
             let response = try await client
                 .from("users")
-                .select("id, name, username, phoneNumber, emergencyContacts, createdAt, hashedPassword, saltedPassword, address, email, measurementType, userHeight, hapticFeedback, locationSharing")
+                .select("id, name, username, phoneNumber, emergencyContacts, createdAt, hashedPassword, saltedPassword, address, email, measurementType, userHeight, hapticFeedback, locationSharing, informationFrequencyMultiplier")
                 .eq("id", value: userId)
                 .single()
                 .execute()

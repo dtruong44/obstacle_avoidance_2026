@@ -383,6 +383,7 @@ struct PreferencesView: View {
     @State private var locationSharing: Bool = false
     @AppStorage("measurementType") private var measurementType: String = "feet"
     @AppStorage("userHeight") private var userHeight: Int = 60
+    @AppStorage("informationFrequencyMultiplier") private var informationFrequencyMultiplier: Double = 1.0
     // The range that the FOV and height can be between
     let heightRange = Array(20...80)
 
@@ -414,6 +415,24 @@ struct PreferencesView: View {
                     .onChange(of: locationSharing) {
                         updatePreference(locationSharing: locationSharing)
                     }
+                Section("Audio Guidance") {
+                    Stepper(value: $informationFrequencyMultiplier, in: 0.5...2.0, step: 0.25) {
+                        HStack {
+                            Text("Information Frequency")
+                            Spacer()
+                            Text(formattedFrequencyValue)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .accessibilityLabel("Information Frequency")
+                    .accessibilityValue("\(formattedVoiceOverFrequencyValue) times")
+                    .accessibilityHint("Adjust how often spoken information is announced")
+                    .onChange(of: informationFrequencyMultiplier) {
+                        let normalizedValue = normalizedFrequencyValue(informationFrequencyMultiplier)
+                        informationFrequencyMultiplier = normalizedValue
+                        updatePreference(informationFrequencyMultiplier: normalizedValue)
+                    }
+                }
             }
             .onAppear {
                 Task {
@@ -424,6 +443,7 @@ struct PreferencesView: View {
                         self.userHeight = updatedUser.userHeight
                         self.measurementType = MeasurementType(rawValue: updatedUser.measurementType)?.rawValue ?? "feet"
                         self.hapticFeedback = updatedUser.hapticFeedback
+                        self.informationFrequencyMultiplier = normalizedFrequencyValue(updatedUser.informationFrequencyMultiplier ?? 1.0)
                     }
                 }
             }
@@ -444,7 +464,8 @@ struct PreferencesView: View {
             userHeight: Int? = nil,
             locationSharing: Bool? = nil,
             measurementType: String? = nil,
-            hapticFeedback: Bool? = nil
+            hapticFeedback: Bool? = nil,
+            informationFrequencyMultiplier: Double? = nil
         ) {
             Task {
                 guard let userId = user?.id else { return }
@@ -453,10 +474,24 @@ struct PreferencesView: View {
                     userHeight: userHeight,
                     locationSharing: locationSharing,
                     measurementType: measurementType,
-                    hapticFeedback: hapticFeedback
+                    hapticFeedback: hapticFeedback,
+                    informationFrequencyMultiplier: informationFrequencyMultiplier
                 )
             }
         }
+
+    private var formattedFrequencyValue: String {
+        String(format: "%.2fx", informationFrequencyMultiplier)
+    }
+
+    private var formattedVoiceOverFrequencyValue: String {
+        String(format: "%.2f", informationFrequencyMultiplier)
+    }
+
+    private func normalizedFrequencyValue(_ value: Double) -> Double {
+        let clamped = min(max(value, 0.5), 2.0)
+        return (clamped * 4.0).rounded() / 4.0
+    }
 }
 struct SettingsToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {

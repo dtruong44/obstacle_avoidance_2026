@@ -30,6 +30,7 @@ struct User: Codable {
     let userHeight: Int
     let hapticFeedback: Bool
     let locationSharing: Bool
+    let informationFrequencyMultiplier: Double?
 }
 
 struct UserPreferencesUpdate: Encodable {
@@ -37,4 +38,5 @@ struct UserPreferencesUpdate: Encodable {
     let locationSharing: Bool?
     let measurementType: String?
     let hapticFeedback: Bool?
+    let informationFrequencyMultiplier: Double?
 }
